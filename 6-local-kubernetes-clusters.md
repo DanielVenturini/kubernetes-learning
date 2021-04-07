@@ -1,3 +1,13 @@
+# K3S - Lightweight Kubernetes
+
+K3S a lightweight option to execute single/multi nodes in a Kubernetes cluster. In K3S [architecture](https://rancher.com/docs/k3s/latest/en/architecture/), the master node is called **k3s server**, and the workers are called **k3s agent**. The cluster can be configured to execute in VMs. To be lightweight, K3S does not use `etcd` as the cluster-state database, but it uses `SQLite`. However, `etcd`, `postgresql`, `mysql` and others can be easily installed and used with K3S.
+
+![k3s-model](https://k3s.io/images/how-it-works-k3s.svg)
+
+The most basic K3S architecture is the single-server, where the K3S server and K3S agents are running in the same machine. However, there is a way to provide a HA Kubernetes cluster using K3S, the High-Availability K3S server with and external DB. In the following architecture, two or more server nodes will run the Kubernetes API and other control planes services, while the K3S agents will execute in different nodes. Finally, the cluster-state database -- `SQLite`, by default -- is stored in other machine, as a external database.
+
+![k3s-HA](https://rancher.com/docs/img/rancher/k3s-architecture-ha-server.png)
+
 # Minikube - A local Kubernetes cluster
 
 Minikube is the most popular way to install all-in-one Kubernetes cluster in a virtual machine (VM) locally on our workstation. The latests version of minikube has been developed to support multi-node Kubernetes cluster, but this feature is still experimental.
