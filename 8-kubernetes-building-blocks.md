@@ -6,7 +6,7 @@ In this chapter, we will explore the [Kubernetes object model](https://kubernete
 
 There are an [API Convention](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md), which describes technically each of the Kubernetes terms.
 
-The Kubernetes object model is very rich and can represent several **persistent entities** in the Kubernetes cluster. Those entities describe the containerized applications we are running, the nodes that are deploying, the application resources and a lot of another configurations. Kubernetes uses these entities to represent the state of your cluster. In the **spec** section we can describe the desired state of the object and Kubernetes manages the **status** section for objects, where the actual state of the object is. Then, the Control Plane continually tries to match the desired status (spec) to current state (status). For example, a Deployment was configured to execute three replicas (desired state -- spec), but in a moment one replica falls down, the current state (status) is different from the desired state and the control plane tries to fix it.
+The Kubernetes object model is very rich and can represent several **persistent entities** in the Kubernetes cluster. Those entities describe the containerized applications we are running, the nodes that are deploying, the application resources and a lot of another configurations. Kubernetes uses these entities to represent the state of your cluster. In the **spec** section we can describe the ***desired state*** of the object and Kubernetes manages the **status** section for objects, where the **current state** of the object is. Then, the Control Plane continually tries to match the desired status (`spec`) to current state (`status`). For example, a Deployment was configured to execute three replicas (desired state -- `spec`), but in a moment one replica falls down, the current state (`status`) is different from the desired state and the control plane tries to fix it.
 
 The next is an example of an Deployment object's configuration manifest:
 
@@ -65,6 +65,8 @@ spec:
     - containerPort: 80
 ```
 
+**Important:** Pods should never be created directly using a manifest file of kind Pod. Pods are not self-healing and, hence, a Pod cannot recreate an instance of itself it there may be an error. The reliable way to create Pods is using a Deployment which configures a [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/) controller to manage the [Pod's lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/).
+
 ### Labels
 
 [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) are simply a **key-value pairs** attached to Kubernetes object to create a concise management. They are just used as a easily way to organize and select objects. Controllers use Labels to logically group together decoupled objects, rather than using object's name or ID.
@@ -82,3 +84,104 @@ kubectl get pods --all-namespaces -l heritage!=Helm	# get all that aren't Heml
 However, we must pay attention that the **labels in `metadata.labels.[*]` will not be inherited by Pods**, just the ones in `spec.template.labels.[*]`.
 
 There is also the [Label Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors) way to select Pods based on their labels. It allows us to search in a great way than the early way. There is the **equality-based selectors**, that works as before using the operators **=**, **==**, and **!=**. There is also the **set-based selectors**, that provides a way to search using a bunch of tags using **in**, **notin**, **exist/does not exist** operators.
+
+### ReplicationController
+
+Although no longer a recommended controller, a [ReplicationController](https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/) ensures a specified number of Pods running at same time. A ReplicationController constantly verifies the desired state of managed application and ensures the current state will match. If the number of desired Pods is smaller than the actual number, the ReplicationController instances new Pods; If greater, the ReplicationController terminates them.
+
+The default way to manage Pods is using a [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/), which configures a [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/) controller to manage [Pod's lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/).
+
+### ReplicaSets
+
+A [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/) is the next-generation of the legacy ReplicationController as well there are some advantages in the ReplicaSet use against the ReplicationController such as the ReplicaSet supports both equality/set-based selectors whereas ReplicationController supports only equality-based selectors.
+
+A ReplicaSet aims to keep a set of replica Pods running in a given time as the desired state. For a specific number of replicas described in the `spec.replicas`, the ReplicaSet creates as much replicas as specified. Both Pods are identically and they run the same container image once they are cloned from the Pod template -- `spec.template`. The information about the ReplicaSet that created a Pod is in `metadata.ownerReferences`.
+
+<img src="https://courses.edx.org/assets/courseware/v1/bdb9c27c39d027fc22133456a2882fa6/asset-v1:LinuxFoundationX+LFS158x+3T2020+type@asset+block/Replica_Set1.png" alt="replica-set-working" style="zoom:33%;" />
+
+There is a very interesting thing about the ReplicaSet and labels.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: to-fill-unique-pod
+  namespace: default
+  labels:
+    delete: once
+    app: to-fill
+    env: production
+    # arch: x86 # with label commented, ReplicaSet will not match this pod
+spec:
+  containers:
+    - name: to-fill-unique-pod
+      image: danielventurini/to-fill:1.0
+      ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: to-fill-metadata
+  namespace: default
+  labels:
+    delete: once
+    app: to-fill
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      delete: once
+      app: to-fill
+      env: production
+      arch: x86
+  template:
+    metadata:
+      labels:
+        delete: once
+        app: to-fill
+        env: production
+        arch: x86
+    spec:
+      containers:
+        - name: to-fill-unique-pod
+          image: danielventurini/to-fill:1.0
+          ports:
+            - containerPort: 8080
+```
+
+In the first part of the manifest above, we create a Pod. This Pod has specific labels in `metadata` field. Then, in the second part of the manifest above, we create a ReplicaSet that instances two Pod's replicas. All the Pods that this ReplicaSet manages is labeled as `spec.selector.matchLabels[*]`. The Pod in the first part of the manifest has three of four labels managed by the ReplicaSet. When we apply this file, Kubernetes creates a Pod and a ReplicaSet with two Pod's instance, hence, we have three Pods. If we add the label `arch: x86` to the Pod in the first part of the manifest, the ReplicaSet would acquire this Pod and manage it. So, ReplicaSet  would notice that there are three Pod's instance in the current state whereas the desire state (`spec.replicas`) specifies only two instances. Finally, the ReplicaSet would delete the first Pod and keep only two replicas as well. It happens because the Pod's template in ReplicaSet (`spec.template`) will be the same as `metadata` in Pod, so, both Pods are the same Kubernetes object.
+
+We can also delete a ReplicaSet and leave all of the Pods unchanged, that is, orphan.
+
+The Deployment is the high-level concept that manages a ReplicaSet. A Deployment provides a set of complementary features to orchestrate Pods. When a Deployment creates Pods, it also creates a ReplicaSet to manage these Pods. **It is not recommended to create and manage a ReplicaSet or a Pod directly**, unless there may be some custom orchestration resources/updates or do not require updates at all.
+
+### Deployments
+
+A [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) is a Kubernetes object that aims to create and manage Pods and ReplicaSets. The DeploymentController is part of the master's node controller managers and it ensures the current state matches the desired state. A Deployment allows for seamless applications **updates and rollbacks** through **rollouts** and **rollbacks**.
+
+In the following image, a Deployment creates three ReplicaSets, which ones create two Pods. Each ReplicaSet reads the Deployment's template in field `spec.template` and they manage the Pods according the template.
+
+<img src="https://courses.edx.org/assets/courseware/v1/5b2c8cbd6bed63c68f6a7d2566615d7f/asset-v1:LinuxFoundationX+LFS158x+3T2020+type@asset+block/Deployment_Updated.png" style="zoom: 25%;" />
+
+The Deployment allows the application to easily receive push updates. When a update is pushed to container, the Deployment **triggers a new ReplicaSet** for the new container and it creates a new **Revision**, as in the following image, and this transition from the previous ReplicaSet to the new ReplicaSet is a Deployment **rolling update**. The new ReplicaSet is scaled to the required number of Pods wheres the previous ReplicaSet is scaled down to 0 Pods and **this ReplicaSet is "stored" for further rollbacks**. All updates in specifics properties of the Pod's template in Deployment metadata triggers a rolling update and, hence, a new revision.
+
+<img src="https://courses.edx.org/assets/courseware/v1/979a990d505485a3ad502836ca5f1078/asset-v1:LinuxFoundationX+LFS158x+3T2020+type@asset+block/ReplikaSet_B.png" alt="deployment-rolling-update" style="zoom:25%;" />
+
+In the above image, the previous state used the container image **nginx:1.7.9**, but when there was an update in the Pod's template in Deployment metadata to image **nginx:1.9.1**, the Deployment saved the **Revision 1** and created the **Revision 2**.  If there is something wrong with the update, the Deployment can be safety rolled back to Revision 1.
+
+> Revisions are not a Deployment exclusive, but we can rollback DaemonSets and StatefulSets.
+
+> In this case, the Revision 1 becomes the Revision 3, and there is no more Revision available, just Revision 2 and 3. Kubernetes stores up to 10 Revision set.
+
+### Namespaces
+
+A [Namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) is a logical cluster separator that allow multiple users and teams to work on the same Kubernetes cluster. The names of the resources/objects created in a Namespace **is unique in that Namespace**, but across the Namespace in the cluster. There are some pre-built namespaces, such as `kube-system`, `kube-public` and the basic one, the `default` namespace. The namespace `kube-public` is really public, it means this namespace provides insecurity access and anyone can read it. Other important namespace is the `kube-node-lease`, which holds **node lease objects** used for node heartbeat data.
+
+---
+
+You should now be able to:
+
+- Describe the Kubernetes object model.
+- Discuss Kubernetes building blocks, e.g. Pods, ReplicaSets, Deployments, Namespaces.
+- Discuss Labels and Selectors.
