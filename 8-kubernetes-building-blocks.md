@@ -67,4 +67,18 @@ spec:
 
 ### Labels
 
-[Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
+[Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) are simply a **key-value pairs** attached to Kubernetes object to create a concise management. They are just used as a easily way to organize and select objects. Controllers use Labels to logically group together decoupled objects, rather than using object's name or ID.
+
+<img src="https://courses.edx.org/assets/courseware/v1/6669997d43534cbd2f251a57ebe0587c/asset-v1:LinuxFoundationX+LFS158x+3T2020+type@asset+block/Labels.png" alt="labels" style="zoom: 33%;" />
+
+Labels do not provide uniqueness by Pods, but we can set a bunch with the same label, instead. Labels is the Kubernetes way to group Pods. We can insert one or several labels in the `spec.template.labels.[*]` and then, we can search Pods by those labels (#1). We can even set the same label on Pods in different namespaces, and get them with `--all-namespaces` option (#2):
+
+```bash
+kubectl get pods -l env=qa	#1
+kubectl get pods --all-namespaces -l heritage=Helm	#2
+kubectl get pods --all-namespaces -l heritage!=Helm	# get all that aren't Heml
+```
+
+However, we must pay attention that the **labels in `metadata.labels.[*]` will not be inherited by Pods**, just the ones in `spec.template.labels.[*]`.
+
+There is also the [Label Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors) way to select Pods based on their labels. It allows us to search in a great way than the early way. There is the **equality-based selectors**, that works as before using the operators **=**, **==**, and **!=**. There is also the **set-based selectors**, that provides a way to search using a bunch of tags using **in**, **notin**, **exist/does not exist** operators.
