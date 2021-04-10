@@ -37,7 +37,34 @@ spec:
 - `apiVersion`: the first required field and specifies which API endpoint in the API Server we want to connect to. 
 - `kind`: the second required field and specifies the object type.
 - `metadata`: the third required field, metadata holds the object's basic information, such as name, namespaces, labels, etc.
-- `spec`: the fourth required field describes the desired object state. All pods from this object model manifest are created using the Pod Template defined in **spec.template**. When a Pod inherits from this object model manifest, the Pod retains its **metadata** and **spec**, but the **apiVersion** and **king** are replaced by **template**.
-- `spec.template.spec`: this field defines the desired state of the Pod.
+- `spec`: the fourth required field describes the desired object state. All pods from this object model manifest are created using the Pod Template defined in **spec.template**. When a Pod inherits from this object model manifest, the Pod retains its **metadata** and **spec**, but the **apiVersion** and **kind** are replaced by **template**.
+- `spec.template.spec`: this field defines the desired state **of the Pod**.
 
-The previous manifest doesn't have any **state** field because it is created by the Kubernetes system.
+The previous manifest doesn't have any **state** field because this field is created by the Kubernetes system.
+
+### Pod
+
+A [Pod](https://kubernetes.io/docs/concepts/workloads/pods/) is the smallest, simplest and the widely known Kubernetes object. It represents an instance of the application **when it is deployed**, so, a Deploy object can create a Pod. A Pod contains one or more containers, which ones share the network namespaces, the IP address, that is, all the containers inside a Pod share the same IP address, and all the containers have access to mount the same external storage. Usually, a Pod contains only a single container, which one is the application.![pods-containers](https://courses.edx.org/assets/courseware/v1/ccc5ba54a8a06ac2a87fe447bb53dcf1/asset-v1:LinuxFoundationX+LFS158x+3T2020+type@asset+block/pods-1-2-3-4.svg)
+
+Pods are extremely ephemeral, that is, they may have short life-cycle and they may be easily created, deleted and recreated, but they do not have the capability to self-heal themselves. This is the reason they are always related with a controller, such as a Deployments, ReplicaSets, etc, and these controller handle Pod's replication, fault tolerance, self-healing, etc. The Pod's metadata is inherited from the controller that creates the Pod, using the Pod Template in `spec.template`.
+
+The code below is an example of a Pod's manifest:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.15.11
+    ports:
+    - containerPort: 80
+```
+
+### Labels
+
+[Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
