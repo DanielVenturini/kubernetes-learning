@@ -168,11 +168,19 @@ The Deployment allows the application to easily receive push updates. When a upd
 
 <img src="https://courses.edx.org/assets/courseware/v1/979a990d505485a3ad502836ca5f1078/asset-v1:LinuxFoundationX+LFS158x+3T2020+type@asset+block/ReplikaSet_B.png" alt="deployment-rolling-update" style="zoom:25%;" />
 
-In the above image, the previous state used the container image **nginx:1.7.9**, but when there was an update in the Pod's template in Deployment metadata to image **nginx:1.9.1**, the Deployment saved the **Revision 1** and created the **Revision 2**.  If there is something wrong with the update, the Deployment can be safety rolled back to Revision 1.
+In the above image, the previous state used the container image **nginx:1.7.9**, but when there was an update in the Pod's template in Deployment metadata to image **nginx:1.9.1**, the Deployment saved the **Revision 1** and created the **Revision 2**.  If there is something wrong with the update, the Deployment can be safety rolled back to Revision 1. In this case, the Revision 1 becomes the Revision 3, and there is no more Revision available, just Revision 2 and 3. Kubernetes stores up to 10 Revision set.
 
-> Revisions are not a Deployment exclusive, but we can rollback DaemonSets and StatefulSets.
+When there is a deploy, a new ReplicaSet is scaled up and the previous ReplicaSet is scaled down. This previous ReplicaSet's Pod Template is saved with the desired state as 0 replicas. Then, it creates a new Revision, that we can see using through the `rollout` command. Also, the previous ReplicaSet's Pod Templates can be seen yet (#1,#2). We then can see the amount of Revisions that can be rolled back (#3). We also can see detailed the ReplicaSet's Pod Template for a specific revision number (#4). Finally, we can restore a previous ReplicaSet's Pod Template (#5), then, **the Revision 3 become the latest Revision**.
 
-> In this case, the Revision 1 becomes the Revision 3, and there is no more Revision available, just Revision 2 and 3. Kubernetes stores up to 10 Revision set.
+```bash
+kubectl -n mynamespace get replicasets	# 1
+kubectl -n mynamespace describe replicasets replset-name	# 2
+kubectl -n mynamespace rollout history deployment deplname	# 3
+kubectl -n mynamespace rollout history deployment deplname --revision=3	# 4
+kubectl -n mynamespace rollout undo deployment deplname --to-revision=3	# 5
+```
+
+Revisions are not a Deployment exclusive, but we can rollback DaemonSets and StatefulSets.
 
 ### Namespaces
 
