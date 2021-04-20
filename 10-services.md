@@ -123,6 +123,18 @@ spec:
   type: NodePort
 ```
 
+After executing the command `kubectl get services,endpoint`, we can see something like the following:
+
+```bash
+NAME            TYPE      CLUSTER-IP    EXTERNAL-IP  PORT(S)       AGE
+nginx-service  NodePort  10.43.169.63  <none>       80:32133/TCP  3d1h
+
+NAME           ENDPOINTS                      AGE
+nginx-service  10.42.0.251:80,10.42.0.252:80  3d1h
+```
+
+We can access the endpoint **directly if we are within the cluster** through `10.42.0.251:80`, that is, **using the ClusterIP way**. If we are outside the cluster, we can just get access the `nginx` through the NodePort way, that is, accessing `localhost:32133` (localhost=machine IP) and **the traffic is forward (proxied) to ClusterIP** on the specific port 80 (**80:32133**). So, the Service exposes the Pod to outside on `machineIP:32133` and the machine forwards the connection to `10.43.169.63:80`. **Any node on the cluster redirect the connection from NodePort to ClusterIP**.
+
 The NodePort ServiceType is useful when the application is intended to access the application outside the cluster. When the user connects to any node in the cluster in that specific port, this node will redirect the traffic to specific application that pertains to the Services' ClusterIP.
 
 <img src="https://cybozu.github.io/introduction-to-kubernetes/images/nodeport.png" alt="node-port" style="zoom:50%;" />
