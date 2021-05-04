@@ -10,7 +10,7 @@ We can have a lot of routing rules within a Service. We can have several Service
 
 Ingress operates in the front of a Services. When an HTTP or an HTTPS request reaches the Ingress, it can route the request to a specific Service based on the routing rules. For example, every `/last-position` request might be routed to a specific Service and, thus, to a specific application.
 
-The following is an example of a **Name-Based Virtual Hosting** Ingress object. All requests for both `blue.example.com` and `gree.example.com` would go to the same Ingress endpoint. All incoming requests on the host `blud.example.com` would be redirected to the service `webserver-blue-svc` endpoint on port 80 and all incoming requests on the host `green.example.com` would be redirected to service `webserver-green-svc` endpoint on port 80, too.
+The following is an example of a **Name-Based Virtual Hosting** Ingress object. All requests for both `blue.example.com` and `gree.example.com` would go to the same Ingress endpoint. All incoming requests on the host `blue.example.com` would be redirected to the service `webserver-blue-svc` endpoint on port 80 and all incoming requests on the host `green.example.com` would be redirected to service `webserver-green-svc` endpoint on port 80, too.
 
 ```yaml
 apiVersion: networking.k8s.io/v1 
@@ -23,7 +23,7 @@ spec:
   - host: blue.example.com
     http:
       paths:
-      - backend:
+        - backend:
           service:
             name: webserver-blue-svc
             port:
@@ -33,7 +33,7 @@ spec:
   - host: green.example.com
     http:
       paths:
-      - backend:
+        - backend:
           service:
             name: webserver-green-svc
             port:
@@ -81,4 +81,8 @@ spec:
 
 ### Ingress Controller
 
-The Ingress resource does not forward any requests by itself, it merely accepts the definitions of traffic routing rules. The Kubernetes object that aims with traffic redirection is the Ingress Controller, which is a reverse proxy that really does the traffic routing based on rules defined in the Ingress resource. Without an Ingress Controller, the Ingress does not do anything on the cluster.
+The Ingress resource does not forward any requests by itself, it merely accepts the definitions of traffic routing rules. The Kubernetes object that aims with traffic redirection is the [Ingress Controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/), which is a reverse proxy that really does the traffic routing based on rules defined in the Ingress resource. Without an Ingress Controller, the Ingress does not do anything on the cluster.
+
+> Ingress Controllers are also known as Controllers, Ingress Proxy, Service Proxy, Reverse Proxy, etc.
+
+There are a bunch of [Ingress Controllers available for Kubernetes](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/). The most 
