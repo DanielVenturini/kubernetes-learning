@@ -55,25 +55,25 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: fan-out-ingress
-  namespace: default
+  namespace: venturini
 spec:
   rules:
-  - host: example.com
+  - host: ventu.com.br
     http:
       paths:
-      - path: /blue
+      - path: /
         backend:
           service:
-            name: webserver-blue-svc
+            name: to-fill
             port:
               number: 80
         pathType: ImplementationSpecific
-      - path: /green
+      - path: /banco
         backend:
           service:
-            name: webserver-green-svc
+            name: to-fill
             port:
-              number: 80
+              number: 8080
         pathType: ImplementationSpecific
 ```
 
@@ -85,4 +85,20 @@ The Ingress resource does not forward any requests by itself, it merely accepts 
 
 > Ingress Controllers are also known as Controllers, Ingress Proxy, Service Proxy, Reverse Proxy, etc.
 
-There are a bunch of [Ingress Controllers available for Kubernetes](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/). The most 
+There are a bunch of [Ingress Controllers available for Kubernetes](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/). The most common one is the **[Nginx Ingress Controller](https://www.nginx.com/products/nginx-ingress-controller/)**.
+
+### Working
+
+Once the `fan-out-ingress` is deployed and the nginx ingress controller is working, we can do requests and the ingress will redirect the traffic for specific services.
+
+If we access `ventu.com.br/`, the ingress forwards the traffic to service `to-fill` on port 80. If the `nginx` container is running on port 80, it receives a request on path `/`.
+
+If we access `ventu.com.br/banco`, the ingress forwards the traffic to service `to-fill` on port 8080. If the to-fill container is running on port 8080, it receives a request on path `/banco`.
+
+---
+
+You should now be able to:
+
+- Explain what Ingress and Ingress Controllers are.
+- Understand when to use Ingress.
+- Access an application from the external world using Ingress.
